@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прогноз аллергии</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Прогноз аллергического риска</h1>
+        <form action="/predict" method="post" class="form">
+            <label for="temperature">Температура (°C):</label>
+            <input type="number" step="0.1" id="temperature" name="temperature" required>
+
+            <label for="humidity">Влажность (%):</label>
+            <input type="number" step="0.1" id="humidity" name="humidity" required>
+
+            <label for="wind_speed">Скорость ветра (м/с):</label>
+            <input type="number" step="0.1" id="wind_speed" name="wind_speed" required>
+
+            <label for="pollen_count">Уровень пыльцы:</label>
+            <input type="number" id="pollen_count" name="pollen_count" required>
+
+            <label for="gender">Пол:</label>
+            <select id="gender" name="gender" required>
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+            </select>
+
+            <label for="age">Возраст:</label>
+            <input type="number" id="age" name="age" required>
+
+            <label for="allergen">Аллерген:</label>
+            <select id="allergen" name="allergen" required>
+                <option value="пыльца березы">Пыльца березы</option>
+                <option value="амброзия">Амброзия</option>
+                <option value="трава">Трава</option>
+            </select>
+
+            <button type="submit" class="btn">Предсказать</button>
+        </form>
+    </div>
+</body>
+</html>
