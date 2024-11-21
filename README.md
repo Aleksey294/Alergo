@@ -20,7 +20,7 @@ cd AIergo
 ```bash
 pip install -r requirements.txt
 ```
-## 3. Запуск 
+### 3. Запуск 
 ``` bash
 streamlit run main.py
 ```
