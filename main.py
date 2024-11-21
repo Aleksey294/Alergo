@@ -1,21 +1,15 @@
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-import uvicorn
+import streamlit as st
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
+from openai import OpenAI
 
-# === ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ ===
-app = FastAPI()
-
-# Подключение HTML-шаблонов
-templates = Jinja2Templates(directory="templates")
+client = OpenAI(
+    base_url='http://localhost:11434/v1',
+    api_key='ollama',
+)
 
 # === ОПИСАНИЕ МОДЕЛИ ===
-# Упрощённый пример обученной модели
 def create_model(input_dim):
     model = Sequential([
         Dense(16, activation='relu', input_shape=(input_dim,)),
@@ -25,61 +19,65 @@ def create_model(input_dim):
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-# Создаём фиктивную модель с заранее известным количеством входов (например, 7)
+# Создаём фиктивную модель
 model = create_model(input_dim=9)
-
-# Загружаем обученные веса, если есть (например, model.load_weights("model.h5"))
 
 # === СЛОВАРИ ДЛЯ КОДИРОВКИ ===
 GENDER_MAP = {"male": 0, "female": 1}
 ALLERGEN_MAP = {"пыльца березы": [1, 0, 0], "амброзия": [0, 1, 0], "трава": [0, 0, 1]}
 
-# === КЛАСС ДЛЯ API ===
-class UserInput(BaseModel):
-    temperature: float
-    humidity: float
-    wind_speed: float
-    pollen_count: float
-    gender: str  # "male" или "female"
-    age: int
-    allergen: str  # Например: "пыльца березы"
-
-# === ГЛАВНАЯ СТРАНИЦА ===
-@app.get("/", response_class=HTMLResponse)
-def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-# === API ДЛЯ ПРЕДСКАЗАНИЯ ===
-@app.post("/predict", response_class=HTMLResponse)
-async def predict(
-    request: Request,
-    temperature: float = Form(...),
-    humidity: float = Form(...),
-    wind_speed: float = Form(...),
-    pollen_count: float = Form(...),
-    gender: str = Form(...),
-    age: int = Form(...),
-    allergen: str = Form(...)
-):
-    # Кодировка пола и аллергена
-    gender_encoded = GENDER_MAP[gender]
-    allergen_encoded = ALLERGEN_MAP.get(allergen, [0, 0, 0])
-
-    # Формируем вектор признаков
-    features = np.array([
-        temperature, humidity, wind_speed, pollen_count,
-        gender_encoded, age
-    ] + allergen_encoded).reshape(1, -1)
-
-    # Предсказание
+# === ФУНКЦИЯ ДЛЯ ПРЕДСКАЗАНИЯ ===
+def predict_risk(features):
     prediction = model.predict(features)
-    risk = "Высокий" if prediction > 0.5 else "Низкий"
+    return "Высокий" if prediction > 0.5 else "Низкий"
 
-    return templates.TemplateResponse("result.html", {"request": request, "risk": risk})
+# === ФУНКЦИЯ ДЛЯ ПОЛУЧЕНИЯ ОБЪЯСНЕНИЯ ===
+def get_explanation(user_input):
+    dialog_history = [{"role": "user", "content": user_input}]
+    llama_response = client.chat.completions.create(
+        model="llama3:8b",
+        messages=dialog_history,
+    )
+    return llama_response.choices[0].message.content
 
-# === ПАПКА СТАТИЧЕСКИХ ФАЙЛОВ ===
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# === Streamlit Приложение ===
+st.title("Прогноз уровня риска аллергии")
 
-# === ЗАПУСК ===
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Формы для ввода данных
+temperature = st.number_input("Температура воздуха (°C)", min_value=-50, max_value=50, value=25)
+humidity = st.number_input("Влажность (%)", min_value=0, max_value=100, value=60)
+wind_speed = st.number_input("Скорость ветра (м/с)", min_value=0.0, max_value=50.0, value=5.0)
+pollen_count = st.number_input("Количество пыльцы", min_value=0, max_value=1000, value=200)
+gender = st.selectbox("Пол", ["Мужчина", "Женщина"])
+age = st.number_input("Возраст", min_value=0, max_value=100, value=30)
+allergen = st.selectbox("Аллерген", ["пыльца березы", "амброзия", "трава"])
+
+# Кодируем входные данные
+gender_encoded = GENDER_MAP[gender]
+allergen_encoded = ALLERGEN_MAP.get(allergen, [0, 0, 0])
+
+# Формируем вектор признаков
+features = np.array([
+    temperature, humidity, wind_speed, pollen_count,
+    gender_encoded, age
+] + allergen_encoded).reshape(1, -1)
+
+# Прогнозирование риска
+if st.button("Получить прогноз"):
+    risk = predict_risk(features)
+
+    # Генерация объяснения
+    user_input = f"Данные о состоянии окружающей среды:\n"\
+        f"- Температура: {temperature}°C\n"\
+        f"- Влажность: {humidity}%\n"\
+        f"- Скорость ветра: {wind_speed} м/с\n"\
+        f"- Уровень пыльцы: {pollen_count}\n"\
+        f"Пользователь: {age} лет, пол: {gender}, аллерген: {allergen}.\n\n"\
+        f"На основании этих данных, вероятность риска: {risk}. "\
+        f"Объясни, почему это так, и дай рекомендации. И самое главное - пиши на РУССКОМ! И сделай текст коротким, но со смыслом"  # Можно подставить информацию из формы для более точного объяснения
+    explanation = get_explanation(user_input)
+
+    # Выводим результаты
+    st.subheader(f"Уровень риска: {risk}")
+    st.subheader("Объяснение:")
+    st.write(explanation)
