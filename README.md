@@ -20,7 +20,7 @@ cd AIergo
 ```bash
 pip install -r requirements.txt
 ```
-Для загрузки LLama 3 необходим Docker
+Для загрузки LLama 3 необходим Docker\
 Скачать его можно тут:
 
 https://www.docker.com
