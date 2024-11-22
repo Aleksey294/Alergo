@@ -3,6 +3,7 @@ import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from openai import OpenAI
+import deep_translator
 
 # === OpenAI клиент ===
 client = OpenAI(
@@ -90,7 +91,7 @@ if st.button("Получить прогноз"):
         f"На основании этих данных, вероятность риска: {risk}. "
         f"Объясни, почему это так, и дай рекомендации. И самое главное - пиши на РУССКОМ! И сделай текст коротким, но со смыслом."
     )
-    explanation = get_explanation(user_input)
+    explanation = deep_translator.GoogleTranslator(source='auto', target='ru').translate(get_explanation(user_input))
 
     # Вывод результатов
     st.subheader(f"Уровень риска: {risk}")
