@@ -53,12 +53,12 @@ def get_explanation(user_input):
 st.title("Прогноз уровня риска аллергии")
 
 # Ввод данных
-temperature = st.number_input("Температура воздуха (°C)", min_value=-50, max_value=50, value=25)
-humidity = st.number_input("Влажность (%)", min_value=0, max_value=100, value=60)
-wind_speed = st.number_input("Скорость ветра (м/с)", min_value=0.0, max_value=50.0, value=5.0)
-pollen_count = st.number_input("Количество пыльцы", min_value=0, max_value=1000, value=200)
+temperature = st.number_input("Температура воздуха (°C)", min_value=-50, max_value=50, value=0)
+humidity = st.number_input("Влажность (%)", min_value=0, max_value=100, value=0)
+wind_speed = st.number_input("Скорость ветра (м/с)", min_value=0.0, max_value=50.0, value=0.0)
+pollen_count = st.number_input("Количество пыльцы", min_value=0, max_value=1000, value=0)
 gender = st.selectbox("Пол", ["male", "female"])
-age = st.number_input("Возраст", min_value=0, max_value=100, value=30)
+age = st.number_input("Возраст", min_value=0, max_value=100, value=0)
 selected_allergens = st.multiselect("Выберите аллергены", ALLERGENS, default=["пыльца березы"])
 
 # Кодировка данных
